@@ -11,7 +11,7 @@ def validate_name():
         return name
     print("Name should only contain letters")
 
-def validate_number(valid, max_value=None): 
+def validate_number(valid, max_value=None):
     value = input(valid)
     if value.isdigit():
         number = int(value)
@@ -21,7 +21,7 @@ def validate_number(valid, max_value=None):
     else:
         print("Input must be a number")
 
-def build_month_mapping():
+def month_mapping():
     month_names = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
@@ -30,7 +30,7 @@ def build_month_mapping():
     for i, month in enumerate(month_names, 1):
         number_str = str(i)
         padded = number_str.zfill(2)
-        aliases = {month.lower(), month[:3].lower(), month[:4].lower(), number_str, padded}
+        aliases = {month.lower(), month[:3].lower(), month[:4].lower(),month[:20].lower(), number_str, padded}
         for alias in aliases:
             mapping[alias] = month
     return mapping
@@ -41,13 +41,13 @@ def validate_month(month_map):
         return month_map[user_input]
     print("Invalid month input")
 
-def is_leap_year(year):
+def leap_year(year):
     return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
 
-def get_days_in_month(month, year):
+def days_in_month(month, year):
     days_by_month = {
         "January": 31,
-        "February": 29 if is_leap_year(year) else 28,
+        "February": 29 if leap_year(year) else 28,
         "March": 31,
         "April": 30,
         "May": 31,
@@ -71,14 +71,14 @@ def calculate_salary():
     working_hours = get_attempts(validate_number, "Enter your working hours: ", max_value=8)
     if not working_hours:
         return
-    month_map = build_month_mapping()
+    month_map = month_mapping()
     month = get_attempts(validate_month, month_map)
     if not month:
         return
     year = get_attempts(validate_number, "Enter the year: ")
     if not year:
         return
-    total_days = get_days_in_month(month, year)
+    total_days = days_in_month(month, year)
     daily_salary = get_attempts(validate_number, "Enter your daily salary: ")
     if not daily_salary:
         return
@@ -87,9 +87,11 @@ def calculate_salary():
         return
     if leave_days > total_days:
         print("Leave days cannot exceed the number of days in the month.")
+        return
     if leave_days > 3:
-        print("Leave days should not be more than 3.")
-    working_days = total_days - leave_days
-    total_salary = working_days * daily_salary
+        print("The salary will be deducted for each day after the 3 day limit for leave.")
+    leave_limit = 3
+    salary_deduct_leave = max(leave_days - leave_limit, 0)
+    total_salary = total_days * daily_salary - salary_deduct_leave * daily_salary
     print(name, "'s total salary for", month, year, "is:", total_salary)
 calculate_salary()
