@@ -11,7 +11,7 @@ def validate_name():
         return name
     print("Name should only contain letters")
 
-def validate_number(valid, max_value=None):
+def validate_number(valid, max_value=None): 
     value = input(valid)
     if value.isdigit():
         number = int(value)
