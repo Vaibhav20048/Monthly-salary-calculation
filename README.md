@@ -1,56 +1,53 @@
-def get_attempts(func, *items, **extra):
+def get_attempts(validation_function, *items, **extra):
     for _ in range(3):
-        result = func(*items, **extra)
-        if result is not None:
+        result = validation_function(*items, **extra)
+        if result:
             return result
-    print("Too many attempts.")
-    return None 
+    print("Too many invalid attempts.")
 
 def validate_name():
     name = input("Enter your name: ")
-    if not name.isalpha():
-        print("Name should only contain letters")
-        return None
-    return name
+    if name.isalpha():
+        return name
+    print("Name should only contain letters")
 
-def validate_number(prompt, max_value=None):
-    num = input(prompt)
-    if not num.isdigit():
-        print("The input must be a number")
-        return None
-    num = int(num)
-    if max_value is not None and num > max_value:
-        print("The input should not exceed the max value", max_value)
-        return None
-    return num
+def validate_number(valid, max_value=None):
+    value = input(valid)
+    if value.isdigit():
+        number = int(value)
+        if max_value is None or number <= max_value:
+            return number
+        print("Should not exceed", max_value)
+    else:
+        print("Input must be a number")
 
-def month_alias():
+def build_month_mapping():
     month_names = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
     ]
-    month_map = {}
-    for i, full_name in enumerate(month_names, start=1):
-        month_map[full_name] = [str(i), str(i).zfill(2), full_name.lower()]
-        for j in range(3, len(full_name) + 1):
-            month_map[full_name].append(full_name[:j].lower())
-    return month_map
+    mapping = {}
+    for i, month in enumerate(month_names, 1):
+        number_str = str(i)
+        padded = number_str.zfill(2)
+        aliases = {month.lower(), month[:3].lower(), month[:4].lower(), number_str, padded}
+        for alias in aliases:
+            mapping[alias] = month
+    return mapping
 
 def validate_month(month_map):
     user_input = input("Enter a month: ").strip().lower()
-    for month, aliases in month_map.items():
-        if user_input in aliases:
-            return month
-    print("The input is not a valid month")
-    return None
+    if user_input in month_map:
+        return month_map[user_input]
+    print("Invalid month input")
 
-def validate_leap_year(year):
+def is_leap_year(year):
     return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
 
-def validate_days_month(month, year):
-    month_days = {
+def get_days_in_month(month, year):
+    days_by_month = {
         "January": 31,
-        "February": 29 if validate_leap_year(year) else 28,
+        "February": 29 if is_leap_year(year) else 28,
         "March": 31,
         "April": 30,
         "May": 31,
@@ -62,23 +59,37 @@ def validate_days_month(month, year):
         "November": 30,
         "December": 31
     }
-    return month_days[month]
+    return days_by_month[month]
 
 def calculate_salary():
     name = get_attempts(validate_name)
+    if not name:
+        return
     age = get_attempts(validate_number, "Enter your age: ", max_value=60)
+    if not age:
+        return
     working_hours = get_attempts(validate_number, "Enter your working hours: ", max_value=8)
-    month_map = month_alias()
+    if not working_hours:
+        return
+    month_map = build_month_mapping()
     month = get_attempts(validate_month, month_map)
+    if not month:
+        return
     year = get_attempts(validate_number, "Enter the year: ")
-    total_days = validate_days_month(month, year)
-    per_day_salary = get_attempts(validate_number, "What is your daily salary: ")
+    if not year:
+        return
+    total_days = get_days_in_month(month, year)
+    daily_salary = get_attempts(validate_number, "Enter your daily salary: ")
+    if not daily_salary:
+        return
     leave_days = get_attempts(validate_number, "How many days did you take leave: ")
+    if not leave_days:
+        return
     if leave_days > total_days:
-        print("Leave days cannot be more than the number of days in the month")
-    elif leave_days > 3:
-        print("You should not take leave for more than 3 days")
+        print("Leave days cannot exceed the number of days in the month.")
+    if leave_days > 3:
+        print("Leave days should not be more than 3.")
     working_days = total_days - leave_days
-    total_salary = working_days * per_day_salary
+    total_salary = working_days * daily_salary
     print(name, "'s total salary for", month, year, "is:", total_salary)
 calculate_salary()
