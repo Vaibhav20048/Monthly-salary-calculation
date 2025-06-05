@@ -9,8 +9,8 @@ def get_attempts(validation_function, *items, **extra):
 
 def validate_name():
     name = input("Enter your name: ")
-    if name.isalpha():
-        return name
+    if name.replace(" ", "").isalpha():
+        return name.title()
     print("Name should only contain letters")
 
 def validate_number(valid, max_value=None):
@@ -24,14 +24,19 @@ def validate_number(valid, max_value=None):
         print("Input must be a number")
 
 def validate_dob():
-    dob_str = input("Enter your date of birth (dd-mm-yyyy): ").strip()
+    dob_input = input("Enter your date of birth (dd-mm-yyyy): ")
     try:
-        dob = datetime.strptime(dob_str, "%d-%m-%Y")
+        dob = datetime.strptime(dob_input, "%d-%m-%Y")
+        today = datetime.today()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+        if age < 18:
+            print("You must be at least 18 years old.")
+            return None
         return dob
     except ValueError:
         print("Invalid date format. Please use dd-mm-yyyy.")
 
-def build_month_mapping():
+def month_mapping():
     month_names = [
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
@@ -49,7 +54,7 @@ def validate_month(month_map):
     user_input = input("Enter a month: ").strip().lower()
     if user_input in month_map:
         return month_map[user_input]
-    print("Invalid month")
+    print("Invalid month input")
 
 def leap_year(year):
     return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
@@ -79,19 +84,25 @@ def calculate_salary():
     if not dob:
         return
     today = datetime.today()
+    birth_month = dob.month
+    current_month = today.month
+    birthday_bonus = 0
+    if birth_month == current_month:
+        print("Many more happy returns of the day!")
+        birthday_bonus = 1000
     age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-    if age < 18:
-        print("You must be above 18 years to work.")
-        return
     working_hours = get_attempts(validate_number, "Enter your working hours: ", max_value=8)
     if not working_hours:
         return
-    month_map = build_month_mapping()
+    month_map = month_mapping()
     month = get_attempts(validate_month, month_map)
     if not month:
         return
-    year = get_attempts(validate_number, "Enter the year: ")
-    if not year:
+    min_year = dob.year
+    max_year = today.year
+    year = get_attempts(validate_number, f"Enter the year ({min_year}-{max_year}): ", max_value=max_year)
+    if year is None or year < min_year:
+        print(f"Year must be between {min_year} and {max_year}.")
         return
     total_days = days_in_month(month, year)
     daily_salary = get_attempts(validate_number, "Enter your daily salary: ")
@@ -103,12 +114,20 @@ def calculate_salary():
     if leave_days > total_days:
         print("Leave days cannot exceed the number of days in the month.")
         return
-    leave_limit = 3
-    extra_leave_days = max(leave_days - leave_limit, 0)
-    total_salary = total_days * daily_salary - extra_leave_days * daily_salary
-    if month.lower() == dob.strftime("%B").lower():
-        print("Many more happy returns of the day!")
-        print("₹1000 has been added to your salary as a birthday bonus.")
-        total_salary += 1000
+    deduction = 0
+    if leave_days > 3:
+        deduction = leave_days - 3
+        deduction = deduction * daily_salary
+        print("The salary of each day will be deducted if leave days are more than 3. ")
+    working_days = total_days - leave_days
+    total_salary = (working_days * daily_salary) - deduction + birthday_bonus
+    print()
     print(name, "'s total salary for", month, year, "is:", total_salary)
-calculate_salary()
+    if birthday_bonus > 0:
+        print("₹1000 has been added to your salary as a birthday bonus!")
+while True:
+    calculate_salary()
+    again = input("Do you want to calculate another salary? (yes/no): ")
+    if again != "yes":
+        print("Thank you!")
+        break
