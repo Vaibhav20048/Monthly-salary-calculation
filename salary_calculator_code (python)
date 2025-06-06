@@ -116,6 +116,8 @@ def calculate_salary():
     if leave_days > total_days:
         print("Leave days cannot exceed the number of days in a month.")
         return
+    if leave_days > 3:
+        print("Maximum leave days for a month is 3 so after that each day salary will be deducted.")
     leave_limit = 3
     extra_leave_days = max(leave_days - leave_limit, 0)
     total_salary = total_days * daily_salary - extra_leave_days * daily_salary
