@@ -5,12 +5,12 @@ def get_attempts(validation_function, *items, **extra):
         result = validation_function(*items, **extra)
         if result:
             return result
-    print("Too many invalid attempts.")
+    print("Too many attempts.")
 
 def validate_name():
     name = input("Enter your name: ")
-    if name.replace(" ", "").isalpha():
-        return name.title()
+    if name.isalpha():
+        return name
     print("Name should only contain letters")
 
 def validate_number(valid, max_value=None):
@@ -24,14 +24,9 @@ def validate_number(valid, max_value=None):
         print("Input must be a number")
 
 def validate_dob():
-    dob_input = input("Enter your date of birth (dd-mm-yyyy): ")
+    dob_str = input("Enter your date of birth (dd-mm-yyyy): ").strip()
     try:
-        dob = datetime.strptime(dob_input, "%d-%m-%Y")
-        today = datetime.today()
-        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-        if age < 18:
-            print("You must be at least 18 years old.")
-            return None
+        dob = datetime.strptime(dob_str, "%d-%m-%Y")
         return dob
     except ValueError:
         print("Invalid date format. Please use dd-mm-yyyy.")
@@ -54,7 +49,7 @@ def validate_month(month_map):
     user_input = input("Enter a month: ").strip().lower()
     if user_input in month_map:
         return month_map[user_input]
-    print("Invalid month input")
+    print("Invalid month")
 
 def leap_year(year):
     return (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
@@ -76,6 +71,17 @@ def days_in_month(month, year):
     }
     return days_by_month[month]
 
+def validate_year(valid, min_year, max_year):
+    value = input(valid)
+    if value.isdigit():
+        year = int(value)
+        if min_year <= year <= max_year:
+            return year
+        else:
+            print("Year must be between", min_year, "and", max_year)
+    else:
+        print("Input must be a number.")
+
 def calculate_salary():
     name = get_attempts(validate_name)
     if not name:
@@ -84,13 +90,10 @@ def calculate_salary():
     if not dob:
         return
     today = datetime.today()
-    birth_month = dob.month
-    current_month = today.month
-    birthday_bonus = 0
-    if birth_month == current_month:
-        print("Many more happy returns of the day!")
-        birthday_bonus = 1000
     age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    if age < 18:
+        print("You must be above 18 years.")
+        return
     working_hours = get_attempts(validate_number, "Enter your working hours: ", max_value=8)
     if not working_hours:
         return
@@ -99,10 +102,9 @@ def calculate_salary():
     if not month:
         return
     min_year = dob.year
-    max_year = today.year
-    year = get_attempts(validate_number, f"Enter the year ({min_year}-{max_year}): ", max_value=max_year)
-    if year is None or year < min_year:
-        print(f"Year must be between {min_year} and {max_year}.")
+    max_year = datetime.now().year
+    year = get_attempts(validate_year, f"Enter the year ({min_year}-{max_year}): ", min_year, max_year)
+    if not year:
         return
     total_days = days_in_month(month, year)
     daily_salary = get_attempts(validate_number, "Enter your daily salary: ")
@@ -112,22 +114,20 @@ def calculate_salary():
     if not leave_days:
         return
     if leave_days > total_days:
-        print("Leave days cannot exceed the number of days in the month.")
+        print("Leave days cannot exceed the number of days in a month.")
         return
-    deduction = 0
-    if leave_days > 3:
-        deduction = leave_days - 3
-        deduction = deduction * daily_salary
-        print("The salary of each day will be deducted if leave days are more than 3. ")
-    working_days = total_days - leave_days
-    total_salary = (working_days * daily_salary) - deduction + birthday_bonus
-    print()
+    leave_limit = 3
+    extra_leave_days = max(leave_days - leave_limit, 0)
+    total_salary = total_days * daily_salary - extra_leave_days * daily_salary
+    if month.lower() == dob.strftime("%B").lower():
+        print("Many more happy returns of the day!")
+        print("₹1000 has been added to your salary as a birthday bonus.")
+        total_salary += 1000
     print(name, "'s total salary for", month, year, "is:", total_salary)
-    if birthday_bonus > 0:
-        print("₹1000 has been added to your salary as a birthday bonus!")
+    
 while True:
     calculate_salary()
-    again = input("Do you want to calculate another salary? (yes/no): ")
-    if again != "yes":
+    choice = input("Do you want to calculate another salary? (yes/no): ")
+    if choice != "yes":
         print("Thank you!")
         break
